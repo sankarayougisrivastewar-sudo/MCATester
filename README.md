@@ -22,7 +22,13 @@ First version:  68 findings — 61 false positives (all 403 responses)
 Current version: 11 findings — 0 false positives
 ```
 
-The key insight: 403 responses are ambiguous. A WAF returning 403 on `/admin` doesn't mean admin exists. Content confirmation — checking what the 403 response body actually contains — eliminates this entire class of false positive.
+The key insight: 403 responses are ambiguous. A WAF returning 403 on `/admin` doesn't mean admin exists. Content confirmation — checking what the 403 response body actually contains — eliminates this entire class of false positive.<img width="1898" height="837" alt="Screenshot 2026-06-24 114332" src="https://github.com/user-attachments/assets/a86ed71f-c0b2-4a3d-aff4-5b4ef500621a" />
+<img width="1898" height="837" alt="Screenshot 2026-06-24 114332" src="https://github.com/user-attachments/assets/d50639b1-dae5-47c8-a851-8917e5badc0f" />
+
+<img width="1907" height="871" alt="Screenshot 2026-06-24 114316" src="https://github.com/user-attachments/assets/41000287-cf82-4a34-854c-71690b351ee2" />
+
+
+
 
 ---
 
