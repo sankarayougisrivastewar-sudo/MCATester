@@ -359,8 +359,7 @@ For disclosures: India → CERT-In `incident@cert-in.org.in`
 
 ## Author
 
-**SANKARAYOUGI SRIVASTESWAR** — B.Tech Computer Science, VIT-AP University  
-Security research intern, National e-Governance Division (NeGD), MeitY, New Delhi
+**SANKARAYOUGI SRIVASTESWAR** — B.Tech Computer Science,Security research intern, National e-Governance Division (NeGD), MeitY, New Delhi
 
 ---
 
