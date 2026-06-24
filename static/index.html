@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MCATester Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0c10;--bg2:#0f1117;--bg3:#161b24;--bg4:#1c2230;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#e8eaf0;--muted:#6b7280;--muted2:#4b5563;
+  --accent:#3b82f6;--accent2:#1d4ed8;
+  --crit:#ef4444;--high:#f97316;--med:#eab308;--low:#3b82f6;--ok:#22c55e;
+  --mono:'JetBrains Mono',monospace;--ui:'Syne',sans-serif;
+  --r:10px;--r2:14px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100vh;overflow-x:hidden}
+/* ── Sidebar ── */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.25rem 0;position:fixed;top:0;left:0;bottom:0;z-index:30}
+.logo{display:flex;align-items:center;gap:9px;padding:0 1rem 1.25rem;border-bottom:1px solid var(--border);margin-bottom:.875rem}
+.logo-icon{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.logo-text{font-family:var(--ui);font-size:15px;font-weight:700}
+.logo-text span{color:var(--accent)}
+.nav-sect{padding:0 .625rem;margin-bottom:1.25rem}
+.nav-lbl{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;padding:0 .5rem;margin-bottom:5px}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;color:var(--muted);cursor:pointer;font-size:12px;font-family:var(--mono);border:none;background:none;width:100%;text-align:left;transition:all .15s}
+.nav-btn:hover{background:var(--bg3);color:var(--text)}
+.nav-btn.active{background:rgba(59,130,246,.15);color:var(--accent)}
+.nav-btn svg{width:14px;height:14px;flex-shrink:0}
+/* ── Main ── */
+.main{margin-left:210px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.75rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+.page-title{font-family:var(--ui);font-size:14px;font-weight:700;letter-spacing:.3px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ok);background:rgba(34,197,94,.1);padding:3px 9px;border-radius:999px;border:1px solid rgba(34,197,94,.2)}
+.dp{width:5px;height:5px;border-radius:50%;background:var(--ok);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.content{padding:1.75rem;flex:1}
+/* ── Scan bar ── */
+.scanbar{display:flex;gap:8px;margin-bottom:1.75rem;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:10px}
+.scanbar input{flex:1;height:36px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:13px;padding:0 13px;outline:none;transition:border-color .15s}
+.scanbar input:focus{border-color:var(--accent)}
+.scanbar input::placeholder{color:var(--muted)}
+.scanbar select{height:36px;padding:0 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;cursor:pointer;outline:none}
+.btn-start{height:36px;padding:0 18px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--mono);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:background .15s;font-weight:500}
+.btn-start:hover{background:var(--accent2)}
+.btn-start:disabled{opacity:.45;cursor:not-allowed}
+/* ── Live scan panel ── */
+.scan-live{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:1.25rem;margin-bottom:1.75rem;display:none}
+.scan-live.on{display:block}
+.slive-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.slive-title{font-family:var(--ui);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.slive-target{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.agents-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:1rem}
+.agent-row{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:8px;padding:8px 10px}
+.agent-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.agent-icon.done{background:rgba(34,197,94,.2)}
+.agent-icon.running{background:rgba(59,130,246,.2);animation:iconpulse 1s infinite}
+.agent-icon.waiting{background:var(--bg4)}
+@keyframes iconpulse{0%,100%{opacity:1}50%{opacity:.5}}
+.agent-info{flex:1;min-width:0}
+.agent-name{font-size:11px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-status{font-size:10px;color:var(--muted);margin-top:1px}
+.agent-bar-wrap{margin-top:3px;height:2px;background:var(--border);border-radius:1px;overflow:hidden}
+.agent-bar-fill{height:100%;border-radius:1px;transition:width .5s ease}
+.agent-bar-fill.done{background:var(--ok)}
+.agent-bar-fill.running{background:var(--accent);animation:barpulse 1.2s infinite}
+.agent-bar-fill.waiting{background:transparent}
+@keyframes barpulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* Log terminal */
+.log-terminal{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.875rem;font-size:11px;line-height:1.6;max-height:200px;overflow-y:auto;font-family:var(--mono)}
+.log-line{padding:1px 0;white-space:pre-wrap;word-break:break-all}
+.log-line.info{color:var(--muted)}
+.log-line.ok{color:var(--ok)}
+.log-line.warn{color:var(--high)}
+.log-line.err{color:var(--crit)}
+.log-line.accent{color:var(--accent)}
+/* ── Metrics ── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:1.75rem}
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.125rem;position:relative;overflow:hidden}
+.metric::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--mc,var(--accent))}
+.metric.c{--mc:var(--crit)}.metric.h{--mc:var(--high)}.metric.m{--mc:var(--med)}.metric.ok{--mc:var(--ok)}
+.metric.m2{--mc:#a855f7}.metric.m3{--mc:#06b6d4}.metric.m4{--mc:#ec4899}
+.metric-lbl{font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:9px}
+.metric-val{font-family:var(--ui);font-size:28px;font-weight:700;line-height:1;margin-bottom:3px;color:var(--mc,var(--text))}
+.metric-sub{font-size:10px;color:var(--muted)}
+/* ── Bottom grid ── */
+.bottom-grid{display:grid;grid-template-columns:1fr 290px;gap:14px}
+/* ── Panel ── */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.125rem}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.125rem}
+.ptitle{font-family:var(--ui);font-size:13px;font-weight:700}
+.btn-sm{font-size:11px;padding:4px 11px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--mono);transition:all .15s}
+.btn-sm:hover{color:var(--text);background:var(--bg3)}
+.btn-danger{color:var(--crit)!important}
+/* ── Table ── */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;padding:0 0 9px;border-bottom:1px solid var(--border);font-weight:400}
+td{padding:10px 0;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12px}
+tr:last-child td{border-bottom:none}
+.tname{font-family:var(--mono);color:var(--text);font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px}
+.sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sdot.done{background:var(--ok)}.sdot.running{background:var(--accent);animation:pulse 1s infinite}
+.sdot.failed{background:var(--crit)}.sdot.pending{background:var(--muted)}
+.badges{display:flex;gap:3px;flex-wrap:wrap}
+.bdg{font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;font-family:var(--mono);letter-spacing:.3px}
+.bdg.C{background:#7f1d1d;color:#fecaca;border:1px solid #ef4444}
+.bdg.H{background:#7c2d12;color:#fed7aa;border:1px solid #f97316}
+.bdg.M{background:#eab308;color:#1a1200;border:1px solid #ca8a04}
+.bdg.L{background:rgba(59,130,246,.25);color:#bfdbfe;border:1px solid rgba(59,130,246,.5)}
+.tc{color:var(--muted);font-size:11px}
+/* ── Donut ── */
+.donut-wrap{display:flex;flex-direction:column;align-items:center;gap:1.125rem}
+.donut-box{position:relative;width:140px;height:140px}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.donut-num{font-family:var(--ui);font-size:24px;font-weight:700}
+.donut-sub{font-size:9px;color:var(--muted)}
+.leg-rows{width:100%}
+.leg-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.leg-row:last-child{border-bottom:none}
+.leg-left{display:flex;align-items:center;gap:7px;color:var(--muted)}
+.sw{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.leg-val{font-weight:600;color:var(--text)}
+/* ── Finding cards ── */
+.findings-section{margin-top:1.5rem;border-top:1px solid var(--border);padding-top:1.25rem;display:none}
+.findings-section.on{display:block}
+.findings-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem}
+.findings-list{display:flex;flex-direction:column;gap:7px;max-height:420px;overflow-y:auto}
+.fc{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--svc);border-radius:8px;padding:10px 13px;cursor:pointer;transition:background .15s}
+.fc:hover{background:var(--bg4)}
+.fc.CRITICAL{--svc:var(--crit)}.fc.HIGH{--svc:var(--high)}.fc.MEDIUM{--svc:var(--med)}.fc.LOW{--svc:var(--low)}
+.fc-hdr{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.fc-type{font-weight:500;font-size:12px}
+.fc-url{font-size:10px;color:var(--muted);margin-bottom:3px;word-break:break-all}
+.fc-sum{font-size:11px;color:var(--muted)}
+.fc-fix{font-size:11px;color:var(--ok);margin-top:4px;display:none}
+.fc.expanded .fc-fix{display:block}
+/* ── Drift / Delta detection ── */
+.drift-panel{margin-top:14px}
+.drift-empty{padding:1.5rem;text-align:center;color:var(--muted);font-size:12px}
+.drift-event{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.drift-event:last-child{border-bottom:none}
+.drift-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.drift-dot.CRITICAL{background:var(--crit)}
+.drift-dot.HIGH{background:var(--high)}
+.drift-dot.MEDIUM{background:var(--med)}
+.drift-dot.LOW{background:var(--low)}
+.drift-info{flex:1;min-width:0}
+.drift-type{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+.drift-detail{font-size:12px;color:var(--text);margin-top:2px;word-break:break-word}
+.drift-url{font-size:10px;color:var(--accent);margin-top:2px;word-break:break-all}
+.drift-badge{font-size:10px;padding:2px 8px;border-radius:999px;font-weight:600;flex-shrink:0}
+.drift-badge.CRITICAL{background:#7f1d1d;color:#fecaca;border:1px solid #ef4444}
+.drift-badge.HIGH{background:#7c2d12;color:#fed7aa;border:1px solid #f97316}
+.drift-badge.MEDIUM{background:#78350f;color:#fde68a;border:1px solid #eab308}
+.drift-badge.LOW{background:rgba(59,130,246,.2);color:#bfdbfe;border:1px solid rgba(59,130,246,.4)}
+.drift-regression{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:3px 9px;border-radius:999px;background:rgba(239,68,68,.1);color:var(--crit);border:1px solid rgba(239,68,68,.2);margin-left:8px}
+/* ── Trend chart ── */
+.trend-panel{margin-top:14px}
+/* ── Report modal ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:50;display:none;align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:min(820px,95vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+.modal-title{font-family:var(--ui);font-size:14px;font-weight:700}
+.modal-body{padding:1.25rem;overflow-y:auto;flex:1}
+.report-md{font-size:12px;line-height:1.7;white-space:pre-wrap;color:var(--muted)}
+.report-md strong{color:var(--text)}
+/* ── Toast ── */
+.toast{position:fixed;bottom:1.25rem;right:1.25rem;background:var(--bg2);border:1px solid var(--border2);border-left:3px solid var(--accent);border-radius:var(--r);padding:11px 15px;font-size:12px;color:var(--text);transform:translateY(70px);opacity:0;transition:all .3s;z-index:100;max-width:300px}
+.toast.on{transform:none;opacity:1}
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="shell">
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🛡</div>
+    <div class="logo-text">MCA<span>Tester</span></div>
+  </div>
+  <div class="nav-sect">
+    <div class="nav-lbl">Main</div>
+    <button class="nav-btn active" onclick="nav('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+    </button>
+    <button class="nav-btn" onclick="nav('scans')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>All Scans
+    </button>
+    <button class="nav-btn" onclick="nav('targets')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Targets
+    </button>
+  </div>
+  <div class="nav-sect">
+    <div class="nav-lbl">Reports</div>
+    <button class="nav-btn" onclick="nav('findings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Findings
+    </button>
+    <button class="nav-btn" onclick="nav('drift')" id="nav-drift">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Drift
+      <span id="drift-badge-nav" style="display:none;margin-left:auto;background:rgba(239,68,68,.2);color:#fecaca;font-size:9px;padding:1px 6px;border-radius:999px;border:1px solid rgba(239,68,68,.3)">!</span>
+    </button>
+    <button class="nav-btn" onclick="nav('chains')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Attack Chains
+      <span id="chain-badge-nav" style="display:none;margin-left:auto;background:rgba(249,115,22,.2);color:#fed7aa;font-size:9px;padding:1px 6px;border-radius:999px;border:1px solid rgba(249,115,22,.3)">!</span>
+    </button>
+    <button class="nav-btn" onclick="nav('alerts')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alerts
+      <span id="alerts-badge-nav" style="display:none;margin-left:auto;background:rgba(239,68,68,.2);color:#fecaca;font-size:9px;padding:1px 6px;border-radius:999px;border:1px solid rgba(239,68,68,.3)">0</span>
+    </button>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <div class="live-badge"><span class="dp"></span>Live</div>
+      <button class="btn-sm" onclick="loadDash()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Scan bar -->
+    <div class="scanbar">
+      <input type="text" id="ti" placeholder="Enter domain (e.g. testphp.vulnweb.com)" onkeydown="if(event.key==='Enter')startScan()"/>
+      <select id="sm">
+        <option value="full">Full scan</option>
+        <option value="passive">OSINT only</option>
+        <option value="quick">Quick scan</option>
+      </select>
+      <button class="btn-start" id="sb" onclick="startScan()">&#x25B6; Start scan</button>
+    </div>
+
+    <!-- Live scan panel -->
+    <div class="scan-live" id="live-panel">
+      <div class="slive-header">
+        <div class="slive-title">
+          <span class="dp" style="background:var(--accent)"></span>
+          Scan in progress
+        </div>
+        <div class="slive-target" id="live-target"></div>
+      </div>
+      <div class="agents-grid" id="agents-grid"></div>
+      <div class="log-terminal" id="log-term">
+        <div class="log-line info">Waiting for scan to start...</div>
+      </div>
+    </div>
+
+    <!-- Dashboard page -->
+    <div id="pg-dashboard">
+      <div class="metrics" id="metrics-row">
+        <div class="metric"><div class="metric-lbl">Total scans</div><div class="metric-val" id="m-scans">-</div><div class="metric-sub">all time</div></div>
+        <div class="metric c"><div class="metric-lbl">Critical</div><div class="metric-val" id="m-crit">-</div><div class="metric-sub">immediate action</div></div>
+        <div class="metric h"><div class="metric-lbl">High</div><div class="metric-val" id="m-high">-</div><div class="metric-sub">address soon</div></div>
+        <div class="metric"><div class="metric-lbl">Total findings</div><div class="metric-val" id="m-total">-</div><div class="metric-sub">across all scans</div></div>
+        <div class="metric m2"><div class="metric-lbl">Subdomains</div><div class="metric-val" id="m-subs">-</div><div class="metric-sub">discovered</div></div>
+        <div class="metric m3"><div class="metric-lbl">Open ports</div><div class="metric-val" id="m-ports">-</div><div class="metric-sub">exposed services</div></div>
+        <div class="metric m4"><div class="metric-lbl">Emails found</div><div class="metric-val" id="m-emails">-</div><div class="metric-sub">harvested</div></div>
+        <div class="metric ok"><div class="metric-lbl">CVEs found</div><div class="metric-val" id="m-cves">-</div><div class="metric-sub">known vulns</div></div>
+        <div class="metric h"><div class="metric-lbl">Chain findings</div><div class="metric-val" id="m-chains">-</div><div class="metric-sub">orchestrator hits</div></div>
+        <div class="metric c"><div class="metric-lbl">Injections</div><div class="metric-val" id="m-injections">-</div><div class="metric-sub">SQLi/XSS confirmed</div></div>
+        <div class="metric m2"><div class="metric-lbl">Takeovers</div><div class="metric-val" id="m-takeovers">-</div><div class="metric-sub">subdomain risk</div></div>
+      </div>
+
+      <div class="bottom-grid">
+        <!-- Recent scans + findings -->
+        <div>
+          <div class="panel">
+            <div class="ph">
+              <div class="ptitle">Recent scans</div>
+              <button class="btn-sm" onclick="nav('scans')">View all</button>
+            </div>
+            <table>
+              <thead><tr><th>Target</th><th>Mode</th><th>Status</th><th>Findings</th><th>Duration</th><th></th></tr></thead>
+              <tbody id="recent-body"><tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+            <!-- Findings inline panel -->
+            <div class="findings-section" id="findings-section">
+              <div class="findings-hdr">
+                <div class="ptitle" id="findings-title">Findings</div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn-sm" id="report-btn" onclick="openReport()">&#x1F4C4; Report</button>
+                  <button class="btn-sm" onclick="closeFindings()">&#x2715; Close</button>
+                </div>
+              </div>
+              <div class="findings-list" id="findings-list"></div>
+            </div>
+          </div>
+
+          <!-- Trend chart -->
+          <div class="panel trend-panel">
+            <div class="ph"><div class="ptitle">Risk trend</div></div>
+            <canvas id="trend-chart" height="90" role="img" aria-label="Risk trend over scans"></canvas>
+          </div>
+
+          <!-- Drift panel — shows after scan view -->
+          <div class="panel drift-panel" id="drift-panel" style="display:none">
+            <div class="ph">
+              <div class="ptitle" id="drift-title">
+                Security Drift
+                <span id="drift-regression-badge" class="drift-regression" style="display:none">⚠ Regressions detected</span>
+              </div>
+              <button class="btn-sm" onclick="document.getElementById('drift-panel').style.display='none'">✕ Close</button>
+            </div>
+            <div id="drift-summary" style="font-size:11px;color:var(--muted);margin-bottom:.875rem"></div>
+            <div id="drift-events-list"></div>
+          </div>
+        </div>
+
+        <!-- Severity donut -->
+        <div class="panel" style="align-self:start">
+          <div class="ph"><div class="ptitle">Severity breakdown</div></div>
+          <div class="donut-wrap">
+            <div class="donut-box">
+              <canvas id="donut" width="140" height="140" role="img" aria-label="Severity donut chart"></canvas>
+              <div class="donut-center">
+                <div class="donut-num" id="dn-total">-</div>
+                <div class="donut-sub">findings</div>
+              </div>
+            </div>
+            <div class="leg-rows">
+              <div class="leg-row"><div class="leg-left"><span class="sw" style="background:var(--crit)"></span>Critical</div><span class="leg-val" id="lc">0</span></div>
+              <div class="leg-row"><div class="leg-left"><span class="sw" style="background:var(--high)"></span>High</div><span class="leg-val" id="lh">0</span></div>
+              <div class="leg-row"><div class="leg-left"><span class="sw" style="background:var(--med)"></span>Medium</div><span class="leg-val" id="lm">0</span></div>
+              <div class="leg-row"><div class="leg-left"><span class="sw" style="background:var(--low)"></span>Low</div><span class="leg-val" id="ll">0</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Scans page -->
+    <div id="pg-scans" style="display:none">
+      <div class="panel">
+        <div class="ph"><div class="ptitle">All scans</div><button class="btn-sm" onclick="loadAllScans()">↻ Refresh</button></div>
+        <table>
+          <thead><tr><th>#</th><th>Target</th><th>Mode</th><th>Status</th><th>Findings</th><th>Duration</th><th>Started</th><th></th></tr></thead>
+          <tbody id="all-scans-body"><tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--muted)">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Targets page -->
+    <div id="pg-targets" style="display:none">
+      <div class="panel">
+        <div class="ph"><div class="ptitle">Targets</div></div>
+        <table>
+          <thead><tr><th>Domain</th><th>Last scanned</th><th>Scans</th><th>C</th><th>H</th><th>M</th><th>L</th></tr></thead>
+          <tbody id="targets-body"><tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--muted)">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Findings page -->
+    <div id="pg-findings" style="display:none">
+      <div class="panel">
+        <div class="ph"><div class="ptitle">All findings</div><span id="findings-scan-label" class="tc"></span></div>
+        <div class="findings-list" id="all-findings-list" style="max-height:none"><div style="padding:2rem;text-align:center;color:var(--muted)">Select a scan to view findings</div></div>
+      </div>
+    </div>
+
+    <!-- Drift page -->
+    <div id="pg-drift" style="display:none">
+      <div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+        <div class="metric c"><div class="metric-lbl">Critical drifts</div><div class="metric-val" id="drift-crit-count">-</div><div class="metric-sub">across all targets</div></div>
+        <div class="metric h"><div class="metric-lbl">High drifts</div><div class="metric-val" id="drift-high-count">-</div><div class="metric-sub">needs attention</div></div>
+        <div class="metric"><div class="metric-lbl">Total events</div><div class="metric-val" id="drift-total-count">-</div><div class="metric-sub">all drift events</div></div>
+        <div class="metric ok"><div class="metric-lbl">Targets tracked</div><div class="metric-val" id="drift-targets-count">-</div><div class="metric-sub">with drift history</div></div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div class="ptitle">Security Drift History</div>
+          <button class="btn-sm" onclick="loadDriftPage()">↻ Refresh</button>
+        </div>
+        <div id="drift-page-content">
+          <div class="drift-empty">No drift data yet — run a target twice to see changes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attack Chains page -->
+    <div id="pg-chains" style="display:none">
+      <div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+        <div class="metric h"><div class="metric-lbl">Chains fired</div><div class="metric-val" id="chain-fired">-</div><div class="metric-sub">this session</div></div>
+        <div class="metric c"><div class="metric-lbl">Critical hits</div><div class="metric-val" id="chain-crit">-</div><div class="metric-sub">confirmed exploits</div></div>
+        <div class="metric m2"><div class="metric-lbl">VPN chains</div><div class="metric-val" id="chain-vpn">-</div><div class="metric-sub">remote access</div></div>
+        <div class="metric m3"><div class="metric-lbl">File API chains</div><div class="metric-val" id="chain-api">-</div><div class="metric-sub">traversal attempts</div></div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div class="ptitle">Attack Chains — Select a scan to view</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="chain-scan-select" style="height:32px;padding:0 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px" onchange="loadChains(this.value)">
+              <option value="">— select scan —</option>
+            </select>
+            <button class="btn-sm" onclick="loadChainScans()">↻</button>
+          </div>
+        </div>
+        <div id="chains-content">
+          <div style="padding:2rem;text-align:center;color:var(--muted)">Select a scan above to view attack chains</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts page -->
+    <div id="pg-alerts" style="display:none">
+      <div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+        <div class="metric c"><div class="metric-lbl">Critical alerts</div><div class="metric-val" id="alert-crit">-</div><div class="metric-sub">immediate action</div></div>
+        <div class="metric h"><div class="metric-lbl">High alerts</div><div class="metric-val" id="alert-high">-</div><div class="metric-sub">address soon</div></div>
+        <div class="metric m2"><div class="metric-lbl">CVE alerts</div><div class="metric-val" id="alert-cve">-</div><div class="metric-sub">known exploits</div></div>
+        <div class="metric m3"><div class="metric-lbl">Injection alerts</div><div class="metric-val" id="alert-inj">-</div><div class="metric-sub">confirmed SQLi/XSS</div></div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div class="ptitle">🔔 Security Alerts — All Critical & High Findings</div>
+          <button class="btn-sm" onclick="loadAlerts()">↻ Refresh</button>
+        </div>
+        <div id="alerts-list">
+          <div style="padding:2rem;text-align:center;color:var(--muted)">Loading alerts...</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- Report modal -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-title">Pentest Report</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sm" onclick="copyReport()">&#x1F4CB; Copy</button>
+        <button class="btn-sm" onclick="closeModal()">&#x2715; Close</button>
+      </div>
+    </div>
+    <div class="modal-body"><pre class="report-md" id="report-content">Loading...</pre></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────
+const PAGES = ['dashboard','scans','targets','findings','drift'];
+let donutChart = null, trendChart = null;
+let activeScanId = null, pollTimer = null, sseSource = null;
+let currentScanData = null;
+
+const AGENT_DEFS = [
+  {name:'Recon agent', icon:'🔍'},
+  {name:'OSINT agent', icon:'🌐'},
+  {name:'Web scanner', icon:'🕷'},
+  {name:'Exploit agent', icon:'💥'},
+  {name:'Analyst', icon:'🧠'},
+  {name:'Report writer', icon:'📝'},
+];
+
+// ── Navigation ─────────────────────────────
+function nav(p) {
+  PAGES.forEach(x => {
+    const el = document.getElementById('pg-'+x);
+    if (el) el.style.display = x === p ? '' : 'none';
+  });
+  document.getElementById('page-title').textContent = p.charAt(0).toUpperCase()+p.slice(1);
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.textContent.trim().toLowerCase().startsWith(p)) b.classList.add('active');
+  });
+  if (p === 'scans')   loadAllScans();
+  if (p === 'targets') loadTargets();
+  if (p === 'drift')   loadDriftPage();
+}
+
+// ── Toast ──────────────────────────────────
+function toast(msg, color) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderLeftColor = color || '#3b82f6';
+  t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 3200);
+}
+
+// ── Helpers ────────────────────────────────
+function ago(s) {
+  if (!s) return '-';
+  const d = (Date.now() - new Date(s)) / 1000;
+  if (d < 60) return 'just now';
+  if (d < 3600) return Math.floor(d/60)+'m ago';
+  if (d < 86400) return Math.floor(d/3600)+'h ago';
+  return Math.floor(d/86400)+'d ago';
+}
+
+function chip(s) {
+  const m = {completed:'done',running:'running',failed:'failed',pending:'pending'};
+  return `<span class="chip"><span class="sdot ${m[s]||'pending'}"></span>${s}</span>`;
+}
+
+function bdgs(r) {
+  let h = '<div class="badges">';
+  if (r.critical) h += `<span class="bdg C">${r.critical}C</span>`;
+  if (r.high)     h += `<span class="bdg H">${r.high}H</span>`;
+  if (r.medium)   h += `<span class="bdg M">${r.medium}M</span>`;
+  if (r.low)      h += `<span class="bdg L">${r.low}L</span>`;
+  if (!r.critical && !r.high && !r.medium && !r.low)
+    h += '<span style="color:var(--muted)">-</span>';
+  return h + '</div>';
+}
+
+// ── Donut ──────────────────────────────────
+function buildDonut(c, h, m, l) {
+  const tot = c+h+m+l;
+  document.getElementById('dn-total').textContent = tot;
+  ['c','h','m','l'].forEach((x,i) =>
+    document.getElementById('l'+x).textContent = [c,h,m,l][i]);
+  const ctx = document.getElementById('donut').getContext('2d');
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: { datasets: [{
+      data: [c||.001,h||.001,m||.001,l||.001],
+      backgroundColor: ['#ef4444','#f97316','#eab308','#3b82f6'],
+      borderWidth: 0, hoverOffset: 6
+    }]},
+    options: {
+      responsive: false, cutout: '74%',
+      plugins: { legend: {display:false}, tooltip: { callbacks: {
+        label: c => ` ${c.raw===.001?0:c.raw} findings`
+      }}}
+    }
+  });
+}
+
+// ── Trend chart ────────────────────────────
+function fmtDate(isoStr) {
+  if (!isoStr) return '?';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+}
+
+function buildTrend(data) {
+  if (!data || !data.length) return;
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+  const labels = data.map(d => fmtDate(d.started_at));
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Critical', data: data.map(d=>d.critical||0), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.1)',  tension:.4, fill:true,  pointRadius:4, pointHoverRadius:6 },
+        { label:'High',     data: data.map(d=>d.high||0),     borderColor:'#f97316', backgroundColor:'rgba(249,115,22,.08)',tension:.4, fill:true,  pointRadius:4, pointHoverRadius:6 },
+        { label:'Medium',   data: data.map(d=>d.medium||0),   borderColor:'#eab308', backgroundColor:'rgba(234,179,8,.06)', tension:.4, fill:true,  pointRadius:4, pointHoverRadius:6 },
+        { label:'Low',      data: data.map(d=>d.low||0),      borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.06)',tension:.4, fill:false, pointRadius:3, borderDash:[4,4] },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position:'top', labels:{ color:'#6b7280', font:{size:11}, boxWidth:10 }},
+        tooltip: { callbacks: {
+          title: items => {
+            const idx = items[0].dataIndex;
+            const sc = data[idx];
+            return (sc ? sc.target+' · ' : '') + fmtDate(sc && sc.started_at);
+          }
+        }}
+      },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#6b7280', font:{size:10}, maxRotation:0} },
+        y: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#6b7280', font:{size:10}}, beginAtZero:true }
+      }
+    }
+  });
+}
+
+// ── Fix 1: Global aggregation across all scans ──────────
+const aggregateSeverities = (scans) => {
+  return scans.reduce((acc, scan) => {
+    acc.critical += scan.critical || 0;
+    acc.high     += scan.high     || 0;
+    acc.medium   += scan.medium   || 0;
+    acc.low      += scan.low      || 0;
+    return acc;
+  }, { critical: 0, high: 0, medium: 0, low: 0 });
+};
+
+// Reactive scan list — source of truth for dashboard
+let scanHistory = [];
+
+// Refresh charts and metrics from current scanHistory state
+function refreshDashUI(d) {
+  // Global metric cards
+  document.getElementById('m-scans').textContent  = d.total_scans;
+  document.getElementById('m-total').textContent  = d.total_findings;
+  document.getElementById('m-subs').textContent   = d.total_subdomains || 0;
+  document.getElementById('m-ports').textContent  = d.total_ports || 0;
+  document.getElementById('m-emails').textContent = d.total_emails || 0;
+  document.getElementById('m-cves').textContent   = d.cve_findings || d.total_cves || 0;
+
+  // Aggregate severities dynamically from visible scan rows
+  const agg = aggregateSeverities(scanHistory);
+  document.getElementById('m-crit').textContent = agg.critical;
+  document.getElementById('m-high').textContent = agg.high;
+
+  // Donut uses aggregated totals from ALL visible scans
+  buildDonut(agg.critical, agg.high, agg.medium, agg.low);
+  buildTrend(d.trend || []);
+
+  // Render table rows
+  const tbody = document.getElementById('recent-body');
+  if (!scanHistory.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--muted)">No scans yet. Enter a domain above to start.</td></tr>';
+    return;
+  }
+  // Refresh new metric cards from dashboard data
+  refreshNewMetrics(d);
+
+  tbody.innerHTML = scanHistory.map(sc => `<tr id="row-${sc.id}">
+    <td class="tname">${sc.target}</td>
+    <td class="tc">${sc.mode||'full'}</td>
+    <td>${chip(sc.status)}</td>
+    <td>${bdgs(sc)}</td>
+    <td class="tc">${sc.duration_seconds ? sc.duration_seconds+'s' : '-'}</td>
+    <td style="display:flex;gap:5px;padding:10px 0">
+      <button class="btn-sm" onclick="viewFindings(${sc.id},'${sc.target}')">View</button>
+      <button class="btn-sm" onclick="viewDrift(${sc.id},'${sc.target}')" title="Security drift vs previous scan">⟳ Drift</button>
+      <button class="btn-sm btn-danger" onclick="delScan(${sc.id})">Del</button>
+    </td>
+  </tr>`).join('');
+}
+
+// ── Dashboard ──────────────────────────────
+async function loadDash() {
+  window.scrollTo({top:0, behavior:'smooth'});
+  try {
+    const r = await fetch('/api/dashboard');
+    if (!r.ok) throw new Error('API error');
+    const d = await r.json();
+    // Store scan history as reactive state
+    scanHistory = d.recent_scans || [];
+    refreshDashUI(d);
+    // Silently check for regressions to show nav badge
+    loadDriftBadge();
+  } catch(e) {
+    toast('Dashboard load failed: '+e.message, '#ef4444');
+  }
+}
+
+async function loadDriftBadge() {
+  try {
+    const r = await fetch('/api/scans?limit=20');
+    const scans = await r.json();
+    const completed = scans.filter(s => s.status === 'completed').slice(0, 5);
+    const deltas = await Promise.all(
+      completed.map(s => fetch('/api/scans/'+s.id+'/delta').then(r=>r.json()).catch(()=>null))
+    );
+    const hasReg = deltas.some(d => d && d.has_regressions);
+    document.getElementById('drift-badge-nav').style.display = hasReg ? 'inline' : 'none';
+  } catch(e) {}
+}
+
+// ── All scans ──────────────────────────────
+async function loadAllScans() {
+  try {
+    const r = await fetch('/api/scans?limit=50');
+    const scans = await r.json();
+    const tbody = document.getElementById('all-scans-body');
+    if (!scans.length) {
+      tbody.innerHTML='<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--muted)">No scans yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = scans.map(s => `<tr>
+      <td class="tc">#${s.id}</td>
+      <td class="tname">${s.target}</td>
+      <td class="tc">${s.mode}</td>
+      <td>${chip(s.status)}</td>
+      <td>${bdgs(s)}</td>
+      <td class="tc">${s.duration_seconds ? s.duration_seconds+'s' : '-'}</td>
+      <td class="tc">${ago(s.started_at)}</td>
+      <td style="display:flex;gap:5px;padding:10px 0">
+        <button class="btn-sm" onclick="viewFindingsPage(${s.id},'${s.target}')">View</button>
+        <button class="btn-sm" onclick="viewDrift(${s.id},'${s.target}');nav('dashboard')" title="Security drift">⟳ Drift</button>
+        <button class="btn-sm btn-danger" onclick="delScan(${s.id})">Del</button>
+      </td>
+    </tr>`).join('');
+  } catch(e) { toast('Load failed','#ef4444'); }
+}
+
+// ── Targets ────────────────────────────────
+async function loadTargets() {
+  try {
+    const r = await fetch('/api/targets');
+    const targets = await r.json();
+    const tbody = document.getElementById('targets-body');
+    if (!targets.length) {
+      tbody.innerHTML='<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--muted)">No targets yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = targets.map(t => `<tr>
+      <td class="tname">${t.domain}</td>
+      <td class="tc">${ago(t.last_scanned)}</td>
+      <td class="tc">${t.scan_count}</td>
+      <td style="color:var(--crit)">${t.last_critical||0}</td>
+      <td style="color:var(--high)">${t.last_high||0}</td>
+      <td style="color:var(--med)">${t.last_medium||0}</td>
+      <td style="color:var(--low)">${t.last_low||0}</td>
+    </tr>`).join('');
+  } catch(e) { toast('Load failed','#ef4444'); }
+}
+
+// ── Findings ───────────────────────────────
+async function viewFindings(scanId, target) {
+  try {
+    const r = await fetch('/api/scans/'+scanId);
+    currentScanData = await r.json();
+    const findings = currentScanData.findings || [];
+
+    document.getElementById('findings-title').textContent = target + ' — ' + findings.length + ' findings';
+    document.getElementById('findings-list').innerHTML = renderFindings(findings);
+    document.getElementById('findings-section').classList.add('on');
+    document.getElementById('report-btn').style.display = currentScanData.report_md ? '' : 'none';
+    document.getElementById('findings-section').scrollIntoView({behavior:'smooth',block:'nearest'});
+  } catch(e) { toast('Failed to load findings','#ef4444'); }
+}
+
+async function viewFindingsPage(scanId, target) {
+  nav('findings');
+  try {
+    const r = await fetch('/api/scans/'+scanId);
+    const data = await r.json();
+    const findings = data.findings || [];
+    document.getElementById('findings-scan-label').textContent = target + ' — ' + findings.length + ' findings';
+    document.getElementById('all-findings-list').innerHTML = renderFindings(findings);
+  } catch(e) { toast('Failed','#ef4444'); }
+}
+
+function renderFindings(findings) {
+  if (!findings.length) return '<div style="padding:2rem;text-align:center;color:var(--muted)">No findings for this scan</div>';
+  return findings.map(f => `
+    <div class="fc ${f.severity||'LOW'}" onclick="this.classList.toggle('expanded')">
+      <div class="fc-hdr">
+        <span class="bdg ${(f.severity||'L')[0]}">${f.severity||'INFO'}</span>
+        <span class="fc-type">${f.vuln_type||f.category||'Finding'}</span>
+      </div>
+      ${f.url ? `<div class="fc-url">${f.url}</div>` : ''}
+      <div class="fc-sum">${f.summary||'No description available'}</div>
+      ${f.fix ? `<div class="fc-fix">Fix: ${f.fix}</div>` : ''}
+    </div>`).join('');
+}
+
+function closeFindings() {
+  document.getElementById('findings-section').classList.remove('on');
+}
+
+// ── Report modal ───────────────────────────
+function openReport() {
+  if (!currentScanData || !currentScanData.report_md) { toast('No report available','#f97316'); return; }
+  document.getElementById('modal-title').textContent = 'Report — ' + currentScanData.target;
+  document.getElementById('report-content').textContent = currentScanData.report_md;
+  document.getElementById('modal-bg').classList.add('on');
+}
+
+function closeModal() { document.getElementById('modal-bg').classList.remove('on'); }
+
+function copyReport() {
+  const txt = document.getElementById('report-content').textContent;
+  navigator.clipboard.writeText(txt).then(() => toast('Copied to clipboard','#22c55e'));
+}
+
+// ── Fix 2: Reactive delete ──────────────────────────────
+async function delScan(id) {
+  if (!confirm('Delete scan #'+id+'?')) return;
+  try {
+    // Step 1: Remove from frontend state immediately
+    scanHistory = scanHistory.filter(sc => sc.id !== id);
+
+    // Step 2: Animate row out
+    const row = document.getElementById('row-'+id);
+    if (row) {
+      row.style.transition = 'opacity .25s, transform .25s';
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(-8px)';
+      setTimeout(() => row.remove(), 250);
+    }
+
+    // Step 3: Re-aggregate — donut and metrics update instantly
+    const agg = aggregateSeverities(scanHistory);
+    buildDonut(agg.critical, agg.high, agg.medium, agg.low);
+    document.getElementById('m-crit').textContent = agg.critical;
+    document.getElementById('m-high').textContent = agg.high;
+    document.getElementById('m-total').textContent =
+      scanHistory.reduce((a,s) => a + (s.total_findings||0), 0);
+
+    // Step 4: Hit API to persist deletion
+    await fetch('/api/scans/'+id, {method:'DELETE'});
+    toast('Scan deleted — metrics updated','#22c55e');
+
+    // Step 5: Reload all scans page if visible
+    if (document.getElementById('pg-scans').style.display !== 'none') loadAllScans();
+
+  } catch(e) { toast('Delete failed','#ef4444'); }
+}
+
+// ── Live scan with SSE ─────────────────────
+function logLine(text, type) {
+  const term = document.getElementById('log-term');
+  const cls = type || guessLogType(text);
+  const el = document.createElement('div');
+  el.className = 'log-line ' + cls;
+  el.textContent = text;
+  term.appendChild(el);
+  if (term.children.length > 200) term.removeChild(term.firstChild);
+  term.scrollTop = term.scrollHeight;
+}
+
+function guessLogType(t) {
+  if (!t) return 'info';
+  const l = t.toLowerCase();
+  if (l.includes('[+]') || l.includes('success') || l.includes('completed')) return 'ok';
+  if (l.includes('[!]') || l.includes('warn') || l.includes('high') || l.includes('critical')) return 'warn';
+  if (l.includes('error') || l.includes('fail') || l.includes('[-]')) return 'err';
+  if (l.includes('agent') || l.includes('task') || l.includes('crew') || l.includes('[*]')) return 'accent';
+  return 'info';
+}
+
+function renderAgents(states) {
+  document.getElementById('agents-grid').innerHTML = states.map(a => `
+    <div class="agent-row">
+      <div class="agent-icon ${a.state}">${a.icon}</div>
+      <div class="agent-info">
+        <div class="agent-name">${a.name}</div>
+        <div class="agent-status">${a.time}</div>
+        <div class="agent-bar-wrap">
+          <div class="agent-bar-fill ${a.state}" style="width:${a.pct}%"></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function startScan() {
+  const target = document.getElementById('ti').value.trim();
+  const mode   = document.getElementById('sm').value;
+  if (!target) { toast('Enter a target domain first','#f97316'); return; }
+
+  document.getElementById('sb').disabled = true;
+  document.getElementById('log-term').innerHTML = '';
+
+  try {
+    const r = await fetch('/api/scans', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({target, mode})
+    });
+
+    if (r.status === 409) { toast('Scan already running for this target','#f97316'); document.getElementById('sb').disabled=false; return; }
+    if (!r.ok) throw new Error('Failed to start');
+
+    const data = await r.json();
+    activeScanId = data.id;
+
+    document.getElementById('live-panel').classList.add('on');
+    document.getElementById('live-target').textContent = '#'+activeScanId+' · '+target;
+    logLine('[*] Scan started for '+target, 'accent');
+
+    // Agent progress animation
+    let step = 0;
+    const states = AGENT_DEFS.map(a => ({...a, pct:0, state:'waiting', time:'waiting...'}));
+    states[0].state='running'; states[0].pct=5; states[0].time='running...';
+    renderAgents(states);
+
+    const anim = setInterval(() => {
+      if (step < AGENT_DEFS.length) {
+        if (step > 0) {
+          states[step-1].pct=100; states[step-1].state='done';
+          states[step-1].time = Math.floor(Math.random()*90+20)+'s';
+        }
+        states[step].state='running'; states[step].pct=8; states[step].time='running...';
+        step++;
+      } else {
+        const last = states[AGENT_DEFS.length-1];
+        last.pct = Math.min(last.pct+4, 92);
+      }
+      renderAgents(states);
+    }, 14000);
+
+    // SSE log stream
+    if (typeof EventSource !== 'undefined') {
+      if (sseSource) sseSource.close();
+      sseSource = new EventSource('/api/scans/'+activeScanId+'/logs');
+      sseSource.addEventListener('log', e => logLine(e.data));
+      sseSource.addEventListener('done', e => {
+        logLine('[+] '+e.data, 'ok');
+        sseSource.close(); sseSource = null;
+      });
+      sseSource.onerror = () => { sseSource && sseSource.close(); };
+    }
+
+    // Poll for completion
+    pollTimer = setInterval(async () => {
+      try {
+        const sr = await fetch('/api/scans/'+activeScanId+'/status');
+        const st = await sr.json();
+        if (st.status === 'completed') {
+          clearInterval(pollTimer); clearInterval(anim);
+          states.forEach(s => {s.pct=100;s.state='done';s.time='done';});
+          renderAgents(states);
+          logLine('[+] All agents completed successfully', 'ok');
+          setTimeout(() => {
+            document.getElementById('live-panel').classList.remove('on');
+            document.getElementById('sb').disabled = false;
+          }, 3000);
+          toast('Scan complete for '+target, '#22c55e');
+          loadDash();
+        } else if (st.status === 'failed') {
+          clearInterval(pollTimer); clearInterval(anim);
+          document.getElementById('live-panel').classList.remove('on');
+          document.getElementById('sb').disabled = false;
+          logLine('[-] Scan failed: '+(st.error||'unknown'), 'err');
+          toast('Scan failed: '+(st.error||'unknown'), '#ef4444');
+        }
+      } catch(e) {}
+    }, 4000);
+
+    toast('Scan started for '+target, '#3b82f6');
+
+  } catch(e) {
+    toast('Failed to start: '+e.message,'#ef4444');
+    document.getElementById('sb').disabled = false;
+  }
+}
+
+// ── Delta / Drift detection ────────────────
+
+function renderDriftEvents(events) {
+  if (!events || !events.length)
+    return '<div class="drift-empty">No drift events — target unchanged since last scan</div>';
+  return events.map(e => `
+    <div class="drift-event">
+      <div class="drift-dot ${e.severity}"></div>
+      <div class="drift-info">
+        <div class="drift-type">${(e.change_type||'').replace(/_/g,' ')}</div>
+        <div class="drift-detail">${e.detail||e.description||''}</div>
+        ${e.url ? `<div class="drift-url">${e.url}</div>` : ''}
+      </div>
+      <span class="drift-badge ${e.severity}">${e.severity}</span>
+    </div>`).join('');
+}
+
+async function viewDrift(scanId, target) {
+  try {
+    const r = await fetch('/api/scans/'+scanId+'/delta');
+    const delta = await r.json();
+
+    const panel = document.getElementById('drift-panel');
+    const title = document.getElementById('drift-title');
+    const summary = document.getElementById('drift-summary');
+    const list = document.getElementById('drift-events-list');
+    const regBadge = document.getElementById('drift-regression-badge');
+
+    if (delta.status === 'no_delta') {
+      title.childNodes[0].textContent = 'Security Drift — ' + target + ' ';
+      summary.textContent = 'First scan for this target — baseline established. Run again to detect changes.';
+      list.innerHTML = '<div class="drift-empty">No previous scan to compare against</div>';
+      regBadge.style.display = 'none';
+    } else {
+      const events = delta.drift_events || [];
+      const critN  = events.filter(e => e.severity === 'CRITICAL').length;
+      const highN  = events.filter(e => e.severity === 'HIGH').length;
+      title.childNodes[0].textContent = 'Security Drift — ' + target + ' ';
+      summary.textContent = `${events.length} change(s) vs scan #${delta.prev_scan_id} · ` +
+        `${critN} critical · ${highN} high · computed ${delta.computed_at ? new Date(delta.computed_at).toLocaleString() : ''}`;
+      list.innerHTML = renderDriftEvents(events);
+      regBadge.style.display = delta.has_regressions ? 'inline-flex' : 'none';
+    }
+
+    panel.style.display = '';
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  } catch(e) {
+    toast('Failed to load drift data', '#ef4444');
+  }
+}
+
+async function loadDriftPage() {
+  try {
+    // Fetch all completed scans and get their deltas
+    const r = await fetch('/api/scans?limit=50');
+    const scans = await r.json();
+    const completed = scans.filter(s => s.status === 'completed');
+
+    // Fetch deltas for all completed scans in parallel
+    const deltas = await Promise.all(
+      completed.map(s =>
+        fetch('/api/scans/'+s.id+'/delta')
+          .then(r => r.json())
+          .then(d => ({...d, scan_id: s.id, target: s.target, started_at: s.started_at}))
+          .catch(() => null)
+      )
+    );
+
+    const realDeltas = deltas.filter(d => d && d.status !== 'no_delta' && d.drift_events);
+
+    // Update metric cards
+    const allEvents  = realDeltas.flatMap(d => d.drift_events || []);
+    const critTotal  = allEvents.filter(e => e.severity === 'CRITICAL').length;
+    const highTotal  = allEvents.filter(e => e.severity === 'HIGH').length;
+    const targetsSet = new Set(realDeltas.map(d => d.target));
+
+    document.getElementById('drift-crit-count').textContent  = critTotal;
+    document.getElementById('drift-high-count').textContent  = highTotal;
+    document.getElementById('drift-total-count').textContent = allEvents.length;
+    document.getElementById('drift-targets-count').textContent = targetsSet.size;
+
+    // Show red badge on nav if regressions found
+    const hasReg = realDeltas.some(d => d.has_regressions);
+    document.getElementById('drift-badge-nav').style.display = hasReg ? 'inline' : 'none';
+
+    const container = document.getElementById('drift-page-content');
+    if (!realDeltas.length) {
+      container.innerHTML = '<div class="drift-empty">No drift data yet — scan a target more than once to see changes</div>';
+      return;
+    }
+
+    // Render grouped by target
+    container.innerHTML = realDeltas.map(d => {
+      const events  = d.drift_events || [];
+      const critN   = events.filter(e => e.severity === 'CRITICAL').length;
+      const highN   = events.filter(e => e.severity === 'HIGH').length;
+      const hasReg  = d.has_regressions;
+      return `
+        <div style="margin-bottom:1.25rem">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:.625rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)">
+            <span style="font-family:var(--ui);font-size:13px;font-weight:700">${d.target}</span>
+            <span class="tc">scan #${d.scan_id} vs #${d.prev_scan_id}</span>
+            ${critN ? `<span class="bdg C">${critN}C</span>` : ''}
+            ${highN ? `<span class="bdg H">${highN}H</span>` : ''}
+            ${hasReg ? `<span class="drift-regression">⚠ regression</span>` : ''}
+            <span class="tc" style="margin-left:auto">${d.computed_at ? ago(d.computed_at) : ''}</span>
+          </div>
+          ${renderDriftEvents(events)}
+        </div>`;
+    }).join('');
+  } catch(e) {
+    toast('Drift load failed: '+e.message, '#ef4444');
+  }
+}
+
+// ── Pages registration ───────────────────
+const ALL_PAGES = ['dashboard','scans','targets','findings','drift','chains','alerts'];
+
+// Override nav to handle new pages
+const _origNav = nav;
+function nav(p) {
+  ALL_PAGES.forEach(x => {
+    const el = document.getElementById('pg-'+x);
+    if (el) el.style.display = x === p ? '' : 'none';
+  });
+  document.getElementById('page-title').textContent =
+    {chains:'Attack Chains', alerts:'Alerts'}[p] || (p.charAt(0).toUpperCase()+p.slice(1));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.textContent.trim().toLowerCase().replace(/\s+/g,'').startsWith(p.replace(/\s+/g,'')))
+      b.classList.add('active');
+  });
+  if (p === 'scans')   loadAllScans();
+  if (p === 'targets') loadTargets();
+  if (p === 'drift')   loadDriftPage();
+  if (p === 'chains')  { loadChainScans(); }
+  if (p === 'alerts')  loadAlerts();
+}
+
+// ── Attack Chains ─────────────────────────
+
+async function loadChainScans() {
+  try {
+    const r = await fetch('/api/scans?limit=20');
+    const scans = await r.json();
+    const completed = scans.filter(s => s.status === 'completed');
+    const sel = document.getElementById('chain-scan-select');
+    sel.innerHTML = '<option value="">— select scan —</option>' +
+      completed.map(s => `<option value="${s.id}">${s.target} (#${s.id})</option>`).join('');
+    // Auto-select most recent
+    if (completed.length) {
+      sel.value = completed[0].id;
+      loadChains(completed[0].id);
+    }
+  } catch(e) {}
+}
+
+async function loadChains(scanId) {
+  if (!scanId) return;
+  const container = document.getElementById('chains-content');
+  container.innerHTML = '<div style="padding:1rem;color:var(--muted)">Loading chains...</div>';
+  try {
+    // Get all findings for this scan
+    const r = await fetch('/api/scans/'+scanId);
+    const data = await r.json();
+    const findings = data.findings || [];
+
+    // Group by source/category
+    const chains = {};
+    const chainFindings = findings.filter(f =>
+      f.source === 'Attack Chain' || f.category === 'Attack Chain' ||
+      (f.vuln_type || '').toLowerCase().includes('chain') ||
+      f.trigger
+    );
+    const cveFindings = findings.filter(f =>
+      f.source === 'cve_correlation' || f.category === 'CVE Intelligence'
+    );
+    const injFindings = findings.filter(f =>
+      f.source === 'payload_injection' || f.category === 'Active Exploitation'
+    );
+    const takoFindings = findings.filter(f =>
+      f.source === 'subdomain_takeover' || f.category === 'Subdomain Takeover'
+    );
+    const infraFindings = findings.filter(f =>
+      f.source === 'infrastructure' || f.category === 'Infrastructure'
+    );
+
+    // Update metric cards
+    document.getElementById('chain-fired').textContent = chainFindings.length;
+    document.getElementById('chain-crit').textContent =
+      findings.filter(f => f.severity === 'CRITICAL').length;
+    document.getElementById('chain-vpn').textContent =
+      findings.filter(f => (f.url||'').includes('vpn')).length;
+    document.getElementById('chain-api').textContent =
+      findings.filter(f => (f.url||'').includes('mca-api')).length;
+
+    // Show badge
+    document.getElementById('chain-badge-nav').style.display =
+      chainFindings.length > 0 ? 'inline' : 'none';
+    document.getElementById('chain-badge-nav').textContent = chainFindings.length;
+
+    let html = '';
+
+    // CVE Intelligence section
+    if (cveFindings.length) {
+      html += renderChainSection('🔴 CVE Intelligence', cveFindings, 'var(--crit)');
+    }
+
+    // Active Exploitation section
+    if (injFindings.length) {
+      html += renderChainSection('💉 Active Exploitation (Confirmed)', injFindings, 'var(--high)');
+    }
+
+    // Infrastructure section
+    if (infraFindings.length) {
+      html += renderChainSection('🏗 Infrastructure Discovered', infraFindings, '#a855f7');
+    }
+
+    // Attack chains section
+    if (chainFindings.length) {
+      html += renderChainSection('⛓ Attack Chain Findings', chainFindings, 'var(--med)');
+    }
+
+    // Takeover section
+    if (takoFindings.length) {
+      html += renderChainSection('🎯 Subdomain Takeover', takoFindings, '#06b6d4');
+    }
+
+    if (!html) {
+      html = '<div style="padding:2rem;text-align:center;color:var(--muted)">No chain or CVE findings for this scan</div>';
+    }
+
+    container.innerHTML = html;
+
+  } catch(e) {
+    container.innerHTML = '<div style="padding:1rem;color:var(--crit)">Error loading chains: '+e.message+'</div>';
+  }
+}
+
+function renderChainSection(title, findings, color) {
+  return `
+    <div style="margin-bottom:1.25rem">
+      <div style="display:flex;align-items:center;gap:8px;padding:.625rem 0;border-bottom:1px solid var(--border);margin-bottom:.75rem">
+        <span style="font-family:var(--ui);font-size:13px;font-weight:700;color:${color}">${title}</span>
+        <span style="background:rgba(255,255,255,.08);color:var(--muted);font-size:10px;padding:2px 8px;border-radius:999px">${findings.length}</span>
+      </div>
+      ${findings.map(f => `
+        <div class="fc ${f.severity||'LOW'}" onclick="this.classList.toggle('expanded')" style="margin-bottom:6px">
+          <div class="fc-hdr">
+            <span class="bdg ${(f.severity||'L')[0]}">${f.severity||'INFO'}</span>
+            <span class="fc-type">${f.vuln_type||'Finding'}</span>
+            ${f.source ? `<span style="font-size:9px;color:var(--muted);margin-left:auto">${f.source}</span>` : ''}
+          </div>
+          ${f.url ? `<div class="fc-url">${f.url}</div>` : ''}
+          <div class="fc-sum">${f.summary||''}</div>
+          ${f.fix ? `<div class="fc-fix">Fix: ${f.fix}</div>` : ''}
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── Alerts ────────────────────────────────
+
+async function loadAlerts() {
+  const container = document.getElementById('alerts-list');
+  try {
+    const r = await fetch('/api/alerts?limit=50');
+    const alerts = await r.json();
+
+    // Update metric cards
+    const critAlerts = alerts.filter(a => a.severity === 'CRITICAL');
+    const highAlerts = alerts.filter(a => a.severity === 'HIGH');
+    const cveAlerts  = alerts.filter(a => a.category === 'CVE Intelligence');
+    const injAlerts  = alerts.filter(a => a.category === 'Active Exploitation');
+
+    document.getElementById('alert-crit').textContent = critAlerts.length;
+    document.getElementById('alert-high').textContent = highAlerts.length;
+    document.getElementById('alert-cve').textContent  = cveAlerts.length;
+    document.getElementById('alert-inj').textContent  = injAlerts.length;
+
+    // Show nav badge if any critical
+    const badge = document.getElementById('alerts-badge-nav');
+    if (critAlerts.length + highAlerts.length > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = critAlerts.length + highAlerts.length;
+      badge.style.background = critAlerts.length > 0
+        ? 'rgba(239,68,68,.2)' : 'rgba(249,115,22,.2)';
+      badge.style.color = critAlerts.length > 0 ? '#fecaca' : '#fed7aa';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    if (!alerts.length) {
+      container.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted)">No high or critical findings yet</div>';
+      return;
+    }
+
+    // Group by target
+    const byTarget = {};
+    alerts.forEach(a => {
+      if (!byTarget[a.target]) byTarget[a.target] = [];
+      byTarget[a.target].push(a);
+    });
+
+    container.innerHTML = Object.entries(byTarget).map(([target, items]) => `
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex;align-items:center;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--border);margin-bottom:.75rem">
+          <span style="font-family:var(--ui);font-size:13px;font-weight:700">${target}</span>
+          ${items.filter(i=>i.severity==='CRITICAL').length ?
+            `<span class="bdg C">${items.filter(i=>i.severity==='CRITICAL').length}C</span>` : ''}
+          ${items.filter(i=>i.severity==='HIGH').length ?
+            `<span class="bdg H">${items.filter(i=>i.severity==='HIGH').length}H</span>` : ''}
+          <span class="tc" style="margin-left:auto">${ago(items[0].started_at)}</span>
+        </div>
+        ${items.map(a => `
+          <div class="fc ${a.severity}" onclick="this.classList.toggle('expanded')" style="margin-bottom:5px">
+            <div class="fc-hdr">
+              <span class="bdg ${a.severity[0]}">${a.severity}</span>
+              <span class="fc-type">${a.vuln_type||'Finding'}</span>
+              ${a.category ? `<span style="font-size:9px;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--muted)">${a.category}</span>` : ''}
+              <span class="tc" style="margin-left:auto;font-size:10px">#${a.scan_id}</span>
+            </div>
+            ${a.url ? `<div class="fc-url">${a.url}</div>` : ''}
+            <div class="fc-sum">${a.summary||''}</div>
+          </div>`).join('')}
+      </div>`).join('');
+
+  } catch(e) {
+    container.innerHTML = '<div style="padding:1rem;color:var(--crit)">Error: '+e.message+'</div>';
+  }
+}
+
+// New metric cards — called after refreshDashUI
+function refreshNewMetrics(d) {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (val !== undefined && val !== null) ? val : '-';
+  };
+  set('m-chains',     d.chain_findings);
+  set('m-injections', d.injection_findings);
+  set('m-takeovers',  d.takeover_findings);
+  // Override CVEs metric with accurate DB count
+  if (d.cve_findings !== undefined)
+    set('m-cves', d.cve_findings || d.total_cves);
+  updateAlertsBadge();
+}
+
+async function updateAlertsBadge() {
+  try {
+    const r = await fetch('/api/alerts?limit=5');
+    const alerts = await r.json();
+    const critical = alerts.filter(a => a.severity === 'CRITICAL').length;
+    const high = alerts.filter(a => a.severity === 'HIGH').length;
+    const badge = document.getElementById('alerts-badge-nav');
+    if (critical + high > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = critical + high;
+    }
+  } catch(e) {}
+}
+
+// ── Init ───────────────────────────────────
+loadDash();
+setInterval(loadDash, 30000);
+</script>
+</body>
+</html>

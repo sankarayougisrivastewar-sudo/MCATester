@@ -1,0 +1,28 @@
+# Never commit these
+.env
+*.db
+mcatester.db
+venv/
+__pycache__/
+*.pyc
+*.pyo
+report_*.md
+report_*.pdf
+*.log
+.DS_Store
+
+# Keep the example file
+!.env.example
+
+# Scan outputs and sensitive files
+*.txt
+*.zip
+msfinstall
+Modelfile
+garak_config.yaml
+real_exploits.py
+osint_patches_v6.py
+real_dorks.py
+output_formatter.py
+reports/
+agent/
