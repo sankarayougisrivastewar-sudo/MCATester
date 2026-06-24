@@ -32,35 +32,7 @@ The key insight: 403 responses are ambiguous. A WAF returning 403 on `/admin` do
 
 ---
 
-## Real findings — Ministry of Corporate Affairs, India
 
-Discovered during authorized research on `mca.gov.in`:
-
-```
-CRITICAL  CVE-2023-27997  CVSS 9.8
-          vpnv3.mca.gov.in:4111 — Fortinet SSL VPN pre-auth heap overflow
-          Unauthenticated remote code execution, no credentials required
-
-CRITICAL  CVE-2022-40684  CVSS 9.8
-          Fortinet authentication bypass — full admin access without credentials
-          Affected: FortiOS 7.0.0-7.0.6, 7.2.0-7.2.1
-
-CRITICAL  CVE-2018-13379  CVSS 9.1
-          Fortinet path traversal — VPN session credentials readable
-          via /remote/fgt_lang without authentication
-
-HIGH      Unauthenticated File-Serving API
-          pminternship.mca.gov.in/mca-api/files/get-file-by-path
-          No auth required to request arbitrary file paths
-
-HIGH      CVE-2023-24486  CVSS 8.8
-          GroupWise WebAccess XSS + session hijack
-          mail.mca.gov.in — active groupware installation
-```
-
-Responsibly disclosed to CERT-In (`incident@cert-in.org.in`) with full PDF report.
-
----
 
 ## Confirmed findings on demo.testfire.net (deliberately vulnerable lab)
 
